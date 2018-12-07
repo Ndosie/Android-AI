@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">NotePad</string>
-    <string name="title_activity_main">MainActivity</string>
-    <string name="title_activity_create_note">CreateNoteActivity</string>
+    <string name="title_activity_main">NotePad</string>
+    <string name="title_activity_create_note">Create/Edit Note</string>
+
+    <string name="hint_note">Your note...</string>
+    <string name="button_save">Save</string>
+    <string name="empty_not_saved">Note not saved because it is empty.</string>
 </resources>

@@ -20,13 +20,16 @@ public class NoteEntry {
     @ColumnInfo(name = "timestamp")
     private long mTimestamp;
 
-    public NoteEntry(@NonNull int id, @NonNull String content, @NonNull long timestamp) {
-        this.mId = id;
+    public NoteEntry(@NonNull String content, @NonNull long timestamp) {
         this.mContent = content;
         this.mTimestamp = timestamp;
     }
 
-    public int getId(){return this.mId;}
+    public void setId(@NonNull int mId) {
+        this.mId = mId;
+    }
+
+    public int getId() {return this.mId;}
     public String getContent(){return this.mContent;}
     public long getTimestamp(){return this.mTimestamp;}
 
