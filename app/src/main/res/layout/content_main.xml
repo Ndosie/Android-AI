@@ -9,11 +9,11 @@
     tools:showIn="@layout/activity_main">
 
 
-    <Button
-        android:id="@+id/button_fetch"
-        android:layout_width="wrap_content"
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerview"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="FETCH"
-        tools:layout_editor_absoluteX="157dp"
-        tools:layout_editor_absoluteY="231dp" />
+        android:layout_margin="16dp"
+        tools:listitem="@layout/recyclerview_item"
+        />
 </android.support.constraint.ConstraintLayout>

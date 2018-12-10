@@ -6,11 +6,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
 import java.util.List;
@@ -20,9 +21,12 @@ import static com.example.android.notepad.CreateNoteActivity.EXTRA_TIMESTAMP;
 
 public class MainActivity extends AppCompatActivity {
     public static final int NEW_NOTE_ACTIVITY_REQUEST_CODE = 1;
+    public static final int UPDATE_NOTE_ACTIVITY_REQUEST_CODE = 2;
+
+    public static final String EXTRA_DATA_UPDATE_NOTE = "extra_word_to_be_updated";
+    public static final String EXTRA_DATA_ID = "extra_data_id";
 
     private NoteViewModel mNoteViewModel;
-    private String mData = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,21 +44,52 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        RecyclerView recyclerView = findViewById(R.id.recyclerview);
+        final NoteListAdapter adapter = new NoteListAdapter(this);
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         mNoteViewModel = ViewModelProviders.of(this).get(NoteViewModel.class);
         mNoteViewModel.getAllNotes().observe(this, new Observer<List<NoteEntry>>() {
             @Override
             public void onChanged(@Nullable final List<NoteEntry> notes) {
-                for (int i=0; i<notes.size(); i++) {
-                    mData += notes.get(i).getContent() + "\n";
-                }
+                // Update the cached copy of the words in the adapter.
+                adapter.setNotes(notes);
             }
         });
 
-        final Button button = findViewById(R.id.button_fetch);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                Snackbar mySnackbar = Snackbar.make(view, mData, Snackbar.LENGTH_LONG);
-                mySnackbar.show();
+        // Add the functionality to swipe items in the
+        // recycler view to delete that item
+        ItemTouchHelper helper = new ItemTouchHelper(
+                new ItemTouchHelper.SimpleCallback(0,
+                        ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+                    @Override
+                    public boolean onMove(RecyclerView recyclerView,
+                                          RecyclerView.ViewHolder viewHolder,
+                                          RecyclerView.ViewHolder target) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onSwiped(RecyclerView.ViewHolder viewHolder,
+                                         int direction) {
+                        int position = viewHolder.getAdapterPosition();
+                        NoteEntry myNote = adapter.getNoteAtPosition(position);
+                        Toast.makeText(MainActivity.this, "Deleting " +
+                                myNote.getContent(), Toast.LENGTH_LONG).show();
+
+                        // Delete the word
+                        mNoteViewModel.deleteNote(myNote);
+                    }
+                });
+        helper.attachToRecyclerView(recyclerView);
+
+        adapter.setOnItemClickListener(new NoteListAdapter.ClickListener()  {
+
+            @Override
+            public void onItemClick(View v, int position) {
+                NoteEntry note = adapter.getNoteAtPosition(position);
+                launchCreateNoteActivity(note);
             }
         });
     }
@@ -66,11 +101,29 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == NEW_NOTE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
             NoteEntry note = new NoteEntry(data.getStringExtra(EXTRA_NOTE),data.getLongExtra(EXTRA_TIMESTAMP, 0));
             mNoteViewModel.insert(note);
-        } else {
+        } else if (requestCode == UPDATE_NOTE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
+            String note_data = data.getStringExtra(CreateNoteActivity.EXTRA_NOTE);
+            long note_timestamp = data.getLongExtra(EXTRA_TIMESTAMP, 0);
+            int id = data.getIntExtra(CreateNoteActivity.EXTRA_REPLY_ID, -1);
+
+            if (id != -1) {
+                mNoteViewModel.update(new NoteEntry(id, note_data, note_timestamp));
+            } else {
+                Toast.makeText(this, R.string.unable_to_update,
+                        Toast.LENGTH_LONG).show();
+            }
+        }else {
             Toast.makeText(
                     getApplicationContext(),
                     R.string.empty_not_saved,
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    public void launchCreateNoteActivity( NoteEntry note) {
+        Intent intent = new Intent(this, CreateNoteActivity.class);
+        intent.putExtra(EXTRA_DATA_UPDATE_NOTE, note.getContent());
+        intent.putExtra(EXTRA_DATA_ID, note.getId());
+        startActivityForResult(intent, UPDATE_NOTE_ACTIVITY_REQUEST_CODE);
     }
 }

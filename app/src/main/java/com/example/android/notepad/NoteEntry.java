@@ -2,6 +2,7 @@ package com.example.android.notepad;
 
 import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
 
@@ -21,6 +22,13 @@ public class NoteEntry {
     private long mTimestamp;
 
     public NoteEntry(@NonNull String content, @NonNull long timestamp) {
+        this.mContent = content;
+        this.mTimestamp = timestamp;
+    }
+
+    @Ignore
+    public NoteEntry(@NonNull int id, @NonNull String content, @NonNull long timestamp) {
+        this.mId = id;
         this.mContent = content;
         this.mTimestamp = timestamp;
     }
