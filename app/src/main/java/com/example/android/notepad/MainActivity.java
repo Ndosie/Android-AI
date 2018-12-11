@@ -35,6 +35,16 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        final Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            String userName = extras.getString("Username", "");
+            if (!userName.isEmpty()) {
+                Toast.makeText(this, "Welcome, You have successfull signIn as " + userName, Toast.LENGTH_LONG).show();
+            }else {
+                Toast.makeText(this, "Welcome, You have successfull with on username", Toast.LENGTH_LONG).show();
+            }
+        }
+
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
