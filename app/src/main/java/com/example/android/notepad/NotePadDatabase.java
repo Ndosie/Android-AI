@@ -5,9 +5,10 @@ import android.arch.persistence.room.Room;
 import android.arch.persistence.room.RoomDatabase;
 import android.content.Context;
 
-@Database(entities = {NoteEntry.class}, version = 1, exportSchema = false)
+@Database(entities = {NoteEntry.class, User.class}, version = 2, exportSchema = false)
 public abstract class NotePadDatabase extends RoomDatabase {
     public abstract NoteDao noteDao();
+    public abstract UserDao userDao();
     private static NotePadDatabase INSTANCE;
 
     static NotePadDatabase getDatabase(final Context context) {

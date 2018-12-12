@@ -7,6 +7,9 @@ import android.os.AsyncTask;
 import java.util.List;
 
 public class NoteRepository {
+    private UserDao mUserDao;
+    private User mUser;
+
     private NoteDao mNoteDao;
     private LiveData<List<NoteEntry>> mAllNotes;
 
@@ -14,30 +17,48 @@ public class NoteRepository {
         NotePadDatabase db = NotePadDatabase.getDatabase(application);
         mNoteDao = db.noteDao();
         mAllNotes = mNoteDao.getAllNotes();
+        mUserDao = db.userDao();
     }
 
     LiveData<List<NoteEntry>> getAllNotes() {
         return mAllNotes;
     }
 
-    public void insert (NoteEntry note) {
-        new insertAsyncTask(mNoteDao).execute(note);
+    public void insertUser (User user) {
+        new NoteRepository.insertUserAsyncTask(mUserDao).execute(user);
     }
 
-    public void update(NoteEntry note)  {
+    public void insertNote (NoteEntry note) {
+        new insertNoteAsyncTask(mNoteDao).execute(note);
+    }
+
+    public void updateNote(NoteEntry note)  {
         new updateNoteAsyncTask(mNoteDao).execute(note);
     }
-
 
     public void deleteNote(NoteEntry note)  {
         new deleteNoteAsyncTask(mNoteDao).execute(note);
     }
 
-    private static class insertAsyncTask extends AsyncTask<NoteEntry, Void, Void> {
+    private static class insertUserAsyncTask extends AsyncTask<User, Void, Void> {
+        private UserDao mAsyncTaskDao;
+
+        insertUserAsyncTask(UserDao dao){
+            mAsyncTaskDao = dao;
+        }
+
+        @Override
+        protected Void doInBackground(User... users) {
+            mAsyncTaskDao.insert(users[0]);
+            return null;
+        }
+    }
+
+    private static class insertNoteAsyncTask extends AsyncTask<NoteEntry, Void, Void> {
 
         private NoteDao mAsyncTaskDao;
 
-        insertAsyncTask(NoteDao dao) {
+        insertNoteAsyncTask(NoteDao dao) {
             mAsyncTaskDao = dao;
         }
 

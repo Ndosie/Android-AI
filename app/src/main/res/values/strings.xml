@@ -10,4 +10,5 @@
     <string name="unable_to_update">Unable to update.</string>
 
     <string name="server_client_id">826884182877-a08b6kg0n5g0vjd289hb7691ptrpmo1c.apps.googleusercontent.com</string>
+    <string name="action_signout">Sign Out</string>
 </resources>

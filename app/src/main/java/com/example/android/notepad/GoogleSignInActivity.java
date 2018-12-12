@@ -1,6 +1,7 @@
 package com.example.android.notepad;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,12 +13,17 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
 public class GoogleSignInActivity extends AppCompatActivity {
-    private static final int RC_SIGN_IN = 3;
-
     private static final String TAG = GoogleSignInActivity.class.getSimpleName();
+
+    private static final int RC_SIGN_IN = 3;
+    public static final int DELETE_REQUEST_CODE = 4;
+    public static final String EXTRA_EMAIL = "com.example.android.notepad.EMAIL";
+    public static final String EXTRA_NAME = "com.example.android.notepad.NAME";
+    public static final String EXTRA_URL = "com.example.android.notepad.URL";
 
     private GoogleSignInClient mGoogleSignInClient;
 
@@ -67,6 +73,8 @@ public class GoogleSignInActivity extends AppCompatActivity {
             // a listener.
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             handleSignInResult(task);
+        }else if(requestCode == DELETE_REQUEST_CODE){
+            finish();
         }
     }
 
@@ -92,8 +100,21 @@ public class GoogleSignInActivity extends AppCompatActivity {
     private void updateUI(GoogleSignInAccount account) {
         if(account != null){
             Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra("Username", account.getDisplayName());
+            intent.putExtra(EXTRA_EMAIL, account.getEmail());
+            intent.putExtra(EXTRA_NAME, account.getDisplayName());
+            intent.putExtra(EXTRA_URL, account.getPhotoUrl());
             startActivity(intent);
         }
+    }
+
+    private void signOut() {
+        mGoogleSignInClient.signOut()
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        Intent intent = new Intent(GoogleSignInActivity.this, MainActivity.class);
+                        startActivityForResult(intent,DELETE_REQUEST_CODE);
+                    }
+                });
     }
 }

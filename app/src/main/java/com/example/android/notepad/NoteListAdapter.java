@@ -5,7 +5,10 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.bumptech.glide.Glide;
 
 import java.util.List;
 
@@ -14,6 +17,7 @@ public class NoteListAdapter extends RecyclerView.Adapter<NoteListAdapter.NoteVi
     private final LayoutInflater mInflater;
     private List<NoteEntry> mNotes; // Cached copy of words
     private static ClickListener clickListener;
+    private NoteViewModel mNoteViewModel;
 
     NoteListAdapter(Context context) { mInflater = LayoutInflater.from(context); }
 
@@ -27,6 +31,10 @@ public class NoteListAdapter extends RecyclerView.Adapter<NoteListAdapter.NoteVi
     public void onBindViewHolder(NoteViewHolder holder, int position) {
         if (mNotes != null) {
             NoteEntry current = mNotes.get(position);
+//            holder.nameView.setText(mNoteViewModel.getUser().getDisplayName());
+//            Glide.with(holder.photoUrl.getContext())
+//                    .load(mNoteViewModel.getUser().getPhotoUrl())
+//                    .into(holder.photoUrl);
             holder.noteItemView.setText(current.getContent());
         } else {
             // Covers the case of data not being ready yet.
@@ -54,10 +62,14 @@ public class NoteListAdapter extends RecyclerView.Adapter<NoteListAdapter.NoteVi
 
     class NoteViewHolder extends RecyclerView.ViewHolder {
         private final TextView noteItemView;
+        private final ImageView photoUrl;
+        private final TextView nameView;
 
         private NoteViewHolder(View itemView) {
             super(itemView);
             noteItemView = itemView.findViewById(R.id.note);
+            photoUrl = itemView.findViewById(R.id.profile_picture);
+            nameView = itemView.findViewById(R.id.name);
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {

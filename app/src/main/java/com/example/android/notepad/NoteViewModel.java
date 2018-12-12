@@ -7,23 +7,26 @@ import android.arch.lifecycle.LiveData;
 import java.util.List;
 
 public class NoteViewModel extends AndroidViewModel {
-    private NoteRepository mRepository;
+    private NoteRepository mNoteRepository;
 
     private LiveData<List<NoteEntry>> mAllNotes;
+    private User mUser;
 
     public NoteViewModel (Application application) {
         super(application);
-        mRepository = new NoteRepository(application);
-        mAllNotes = mRepository.getAllNotes();
+        mNoteRepository = new NoteRepository(application);
+        mAllNotes = mNoteRepository.getAllNotes();
     }
 
     LiveData<List<NoteEntry>> getAllNotes() { return mAllNotes; }
 
-    public void insert(NoteEntry note) { mRepository.insert(note); }
+    public void insertNote(NoteEntry note) { mNoteRepository.insertNote(note); }
 
-    public void deleteNote(NoteEntry note) {mRepository.deleteNote(note);}
+    public void insertUser(User user) { mNoteRepository.insertUser(user); }
+
+    public void deleteNote(NoteEntry note) {mNoteRepository.deleteNote(note);}
 
     public void update(NoteEntry note) {
-        mRepository.update(note);
+        mNoteRepository.updateNote(note);
     }
 }
