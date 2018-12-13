@@ -4,6 +4,7 @@ import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -16,12 +17,19 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+
 import java.util.List;
 
 import static com.example.android.notepad.CreateNoteActivity.EXTRA_NOTE;
 import static com.example.android.notepad.CreateNoteActivity.EXTRA_TIMESTAMP;
 import static com.example.android.notepad.GoogleSignInActivity.EXTRA_EMAIL;
 import static com.example.android.notepad.GoogleSignInActivity.EXTRA_NAME;
+import static com.example.android.notepad.GoogleSignInActivity.EXTRA_NEW_SIGNIN;
 import static com.example.android.notepad.GoogleSignInActivity.EXTRA_URL;
 
 public class MainActivity extends AppCompatActivity {
@@ -34,12 +42,21 @@ public class MainActivity extends AppCompatActivity {
 
     private NoteViewModel mNoteViewModel;
 
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions mGso;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mGso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, mGso);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -69,14 +86,17 @@ public class MainActivity extends AppCompatActivity {
             String email  = extras.getString(EXTRA_EMAIL, "");
             String name = extras.getString(EXTRA_NAME, "");
             String url = extras.getString(EXTRA_URL, "");
+            boolean newSignIn = extras.getBoolean(EXTRA_NEW_SIGNIN, true);
 
-            //User user = new User(email, name, url);
-            //mNoteViewModel.insertUser(user);
+            if(newSignIn) {
+                User user = new User(email, name, url);
+                mNoteViewModel.insertUser(user);
+            }
 
             if (!name.isEmpty()) {
-                Toast.makeText(this, "Welcome, You have successfull signIn as " + name, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Welcome, You have successfully signIn as " + name, Toast.LENGTH_LONG).show();
             }else {
-                Toast.makeText(this, "Welcome, You have successfull with on username", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Welcome, You have successfully with on username", Toast.LENGTH_LONG).show();
             }
         }
 
@@ -100,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(MainActivity.this, "Deleting " +
                                 myNote.getContent(), Toast.LENGTH_LONG).show();
 
-                        // Delete the word
+                        // Delete the note
                         mNoteViewModel.deleteNote(myNote);
                     }
                 });
@@ -158,19 +178,25 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_signout) {
-            Intent intent = new Intent(MainActivity.this,GoogleSignInActivity.class);
-            intent.putExtra(EXTRA_SIGN_OUT_REQUEST, "Signout");
-            startActivity(intent);
+            signOut();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void signOut() {
+        mGoogleSignInClient.signOut()
+                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        mNoteViewModel.deleteUser();
+                        mNoteViewModel.deleteAllNotes();
+                        finish();
+                    }
+                });
     }
 }

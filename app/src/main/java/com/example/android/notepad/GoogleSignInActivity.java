@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -16,16 +17,23 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import static com.example.android.notepad.MainActivity.EXTRA_SIGN_OUT_REQUEST;
+
 public class GoogleSignInActivity extends AppCompatActivity {
     private static final String TAG = GoogleSignInActivity.class.getSimpleName();
 
     private static final int RC_SIGN_IN = 3;
-    public static final int DELETE_REQUEST_CODE = 4;
+    public static final String EXTRA_NEW_SIGNIN = "com.example.android.notepad.SIGNIN";
     public static final String EXTRA_EMAIL = "com.example.android.notepad.EMAIL";
     public static final String EXTRA_NAME = "com.example.android.notepad.NAME";
     public static final String EXTRA_URL = "com.example.android.notepad.URL";
 
     private GoogleSignInClient mGoogleSignInClient;
+    private boolean mIsNewSignin;
+    private GoogleSignInOptions mGso;
+
+    private NoteViewModel mNoteViewModel;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,12 +42,12 @@ public class GoogleSignInActivity extends AppCompatActivity {
 
         // Configure sign-in to request the user's ID, email address, and basic
         // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        mGso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
 
         // Build a GoogleSignInClient with the options specified by gso.
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        mGoogleSignInClient = GoogleSignIn.getClient(this, mGso);
 
         // Set the dimensions of the sign-in button.
         SignInButton signInButton = findViewById(R.id.sign_in_button);
@@ -60,6 +68,11 @@ public class GoogleSignInActivity extends AppCompatActivity {
         // Check for existing Google Sign In account, if the user is already signed in
         // the GoogleSignInAccount will be non-null.
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if(account != null){
+            mIsNewSignin = false;
+        }else {
+            mIsNewSignin = true;
+        }
         updateUI(account);
     }
 
@@ -73,8 +86,6 @@ public class GoogleSignInActivity extends AppCompatActivity {
             // a listener.
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             handleSignInResult(task);
-        }else if(requestCode == DELETE_REQUEST_CODE){
-            finish();
         }
     }
 
@@ -103,18 +114,8 @@ public class GoogleSignInActivity extends AppCompatActivity {
             intent.putExtra(EXTRA_EMAIL, account.getEmail());
             intent.putExtra(EXTRA_NAME, account.getDisplayName());
             intent.putExtra(EXTRA_URL, account.getPhotoUrl());
+            intent.putExtra(EXTRA_NEW_SIGNIN, mIsNewSignin);
             startActivity(intent);
         }
-    }
-
-    private void signOut() {
-        mGoogleSignInClient.signOut()
-                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        Intent intent = new Intent(GoogleSignInActivity.this, MainActivity.class);
-                        startActivityForResult(intent,DELETE_REQUEST_CODE);
-                    }
-                });
     }
 }
