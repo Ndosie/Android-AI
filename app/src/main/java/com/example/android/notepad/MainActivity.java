@@ -23,6 +23,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
@@ -36,10 +39,17 @@ import static com.example.android.notepad.GoogleSignInActivity.EXTRA_URL;
 public class MainActivity extends AppCompatActivity {
     public static final int NEW_NOTE_ACTIVITY_REQUEST_CODE = 1;
     public static final int UPDATE_NOTE_ACTIVITY_REQUEST_CODE = 2;
-    public static final String EXTRA_SIGN_OUT_REQUEST= "com.example.android.notepad.SIGNOUT";
 
     public static final String EXTRA_DATA_UPDATE_NOTE = "extra_word_to_be_updated";
     public static final String EXTRA_DATA_ID = "extra_data_id";
+
+
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseUser mFirebaseUser;
+    private DatabaseReference mDatabaseReference;
+    private String mUserId;
+
+    private GoogleSignInClient mGoogleSignInClient;
 
     private NoteViewModel mNoteViewModel;
 
@@ -49,6 +59,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Build a GoogleSignInClient with the options specified by gso.
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        // Initialize Firebase Auth, Database reference and user id
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        mFirebaseUser = mFirebaseAuth.getCurrentUser();
+        mDatabaseReference = FirebaseDatabase.getInstance().getReference();
+        mUserId = mFirebaseUser.getUid();
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -82,6 +105,9 @@ public class MainActivity extends AppCompatActivity {
 
             if(newSignIn) {
                 User user = new User(email, name, url);
+                mDatabaseReference.child("users")
+                        .push()
+                        .setValue(user);
                 mNoteViewModel.insertUser(user);
             }
 
@@ -134,6 +160,11 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == NEW_NOTE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
             NoteEntry note = new NoteEntry(data.getStringExtra(EXTRA_NOTE),data.getLongExtra(EXTRA_TIMESTAMP, 0));
+            mDatabaseReference.child("users")
+                    .child(mUserId)
+                    .child("notes")
+                    .push()
+                    .setValue(note);
             mNoteViewModel.insertNote(note);
         } else if (requestCode == UPDATE_NOTE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
             String note_data = data.getStringExtra(CreateNoteActivity.EXTRA_NOTE);
@@ -181,9 +212,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-        mNoteViewModel.deleteUser();
-        mNoteViewModel.deleteAllNotes();
         FirebaseAuth.getInstance().signOut();
-        finish();
+        // Google sign out
+        mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        mNoteViewModel.deleteUser();
+                        mNoteViewModel.deleteAllNotes();
+                        finish();
+                    }
+                });
     }
 }
