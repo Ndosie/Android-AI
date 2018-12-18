@@ -22,6 +22,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 
@@ -42,21 +43,12 @@ public class MainActivity extends AppCompatActivity {
 
     private NoteViewModel mNoteViewModel;
 
-    private GoogleSignInClient mGoogleSignInClient;
-    private GoogleSignInOptions mGso;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        mGso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-
-        mGoogleSignInClient = GoogleSignIn.getClient(this, mGso);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -189,14 +181,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-        mGoogleSignInClient.signOut()
-                .addOnCompleteListener(this, new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        mNoteViewModel.deleteUser();
-                        mNoteViewModel.deleteAllNotes();
-                        finish();
-                    }
-                });
+        mNoteViewModel.deleteUser();
+        mNoteViewModel.deleteAllNotes();
+        FirebaseAuth.getInstance().signOut();
+        finish();
     }
 }
