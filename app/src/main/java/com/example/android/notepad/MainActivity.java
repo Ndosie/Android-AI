@@ -1,7 +1,5 @@
 package com.example.android.notepad;
 
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -24,12 +22,19 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.example.android.notepad.CreateNoteActivity.EXTRA_NOTE;
+import static com.example.android.notepad.CreateNoteActivity.EXTRA_REPLY_ID;
 import static com.example.android.notepad.CreateNoteActivity.EXTRA_TIMESTAMP;
 import static com.example.android.notepad.GoogleSignInActivity.EXTRA_EMAIL;
 import static com.example.android.notepad.GoogleSignInActivity.EXTRA_NAME;
@@ -53,9 +58,16 @@ public class MainActivity extends AppCompatActivity {
 
     private NoteViewModel mNoteViewModel;
 
+    private ArrayList mNotes = new ArrayList<NoteEntry>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        /*if (!FirebaseApp.getApps(this).isEmpty()) {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        }*/
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -83,18 +95,51 @@ public class MainActivity extends AppCompatActivity {
         });
 
         RecyclerView recyclerView = findViewById(R.id.recyclerview);
+        //final NoteListAdapter adapter = new NoteListAdapter(this);
         final NoteListAdapter adapter = new NoteListAdapter(this);
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        mNoteViewModel = ViewModelProviders.of(this).get(NoteViewModel.class);
+        /*mNoteViewModel = ViewModelProviders.of(this).get(NoteViewModel.class);
         mNoteViewModel.getAllNotes().observe(this, new Observer<List<NoteEntry>>() {
             @Override
             public void onChanged(@Nullable final List<NoteEntry> notes) {
                 // Update the cached copy of the notes in the adapter.
                 adapter.setNotes(notes);
             }
+        });*/
+
+        Query notesQuery = mDatabaseReference.child("users").child(mUserId).child("notes");
+        notesQuery.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot noteSnapshot, @Nullable String s) {
+                mNotes.add(new NoteEntry(noteSnapshot.getKey(),(String) noteSnapshot.child("content").getValue(),
+                        (Long) noteSnapshot.child("timestamp").getValue()));
+                adapter.setNotes(mNotes);
+
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
         });
+
 
         final Bundle extras = getIntent().getExtras();
         if (extras != null) {
@@ -108,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 mDatabaseReference.child("users")
                         .push()
                         .setValue(user);
-                mNoteViewModel.insertUser(user);
+                //mNoteViewModel.insertUser(user);
             }
 
             if (!name.isEmpty()) {
@@ -139,7 +184,8 @@ public class MainActivity extends AppCompatActivity {
                                 myNote.getContent(), Toast.LENGTH_LONG).show();
 
                         // Delete the note
-                        mNoteViewModel.deleteNote(myNote);
+                        //mNoteViewModel.deleteNote(myNote);
+                        deleteNote(myNote.getFirebaseId());
                     }
                 });
         helper.attachToRecyclerView(recyclerView);
@@ -165,14 +211,26 @@ public class MainActivity extends AppCompatActivity {
                     .child("notes")
                     .push()
                     .setValue(note);
-            mNoteViewModel.insertNote(note);
+            //mNoteViewModel.insertNote(note);
         } else if (requestCode == UPDATE_NOTE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
-            String note_data = data.getStringExtra(CreateNoteActivity.EXTRA_NOTE);
+            String note_content = data.getStringExtra(CreateNoteActivity.EXTRA_NOTE);
             long note_timestamp = data.getLongExtra(EXTRA_TIMESTAMP, 0);
-            int id = data.getIntExtra(CreateNoteActivity.EXTRA_REPLY_ID, -1);
+            //int id = data.getIntExtra(CreateNoteActivity.EXTRA_REPLY_ID, -1);
+            String firebaseId = data.getStringExtra(EXTRA_REPLY_ID);
 
-            if (id != -1) {
-                mNoteViewModel.update(new NoteEntry(id, note_data, note_timestamp));
+            if (firebaseId != null) {
+                //mNoteViewModel.update(new NoteEntry(id, note_data, note_timestamp));
+
+                DatabaseReference entryRef = mDatabaseReference.child("users")
+                        .child(mUserId)
+                        .child("notes")
+                        .child(firebaseId);
+                Map<String,Object> entryMap = new HashMap<String,Object>();
+                entryMap.put("content", note_content);
+                entryMap.put("timestamp", note_timestamp);
+                entryRef.updateChildren(entryMap);
+                Intent intent = new Intent(MainActivity.this, MainActivity.class);
+                startActivity(intent);
             } else {
                 Toast.makeText(this, R.string.unable_to_update,
                         Toast.LENGTH_LONG).show();
@@ -188,8 +246,23 @@ public class MainActivity extends AppCompatActivity {
     public void launchCreateNoteActivity( NoteEntry note) {
         Intent intent = new Intent(this, CreateNoteActivity.class);
         intent.putExtra(EXTRA_DATA_UPDATE_NOTE, note.getContent());
-        intent.putExtra(EXTRA_DATA_ID, note.getId());
+        //intent.putExtra(EXTRA_DATA_ID, note.getId());
+        intent.putExtra(EXTRA_DATA_ID, note.getFirebaseId());
         startActivityForResult(intent, UPDATE_NOTE_ACTIVITY_REQUEST_CODE);
+    }
+
+
+    private void deleteNote(String noteId){
+        mDatabaseReference.child("users")
+                .child(mUserId)
+                .child("notes")
+                .child(noteId)
+                .removeValue();
+        Toast.makeText(this, getString(R.string.delete_success), Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(MainActivity.this, MainActivity.class);
+        startActivity(intent);
+
     }
 
     @Override
@@ -218,8 +291,8 @@ public class MainActivity extends AppCompatActivity {
                 new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
-                        mNoteViewModel.deleteUser();
-                        mNoteViewModel.deleteAllNotes();
+                        //mNoteViewModel.deleteUser();
+                        //mNoteViewModel.deleteAllNotes();
                         finish();
                     }
                 });

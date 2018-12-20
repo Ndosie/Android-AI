@@ -53,14 +53,18 @@ public class CreateNoteActivity extends AppCompatActivity {
                 if (TextUtils.isEmpty(mEditNote.getText())) {
                     setResult(RESULT_CANCELED, replyIntent);
                 } else {
-                    String note = mEditNote.getText().toString();
+                    String content = mEditNote.getText().toString();
                     long timestamp = System.currentTimeMillis();
-                    replyIntent.putExtra(EXTRA_NOTE, note);
+                    replyIntent.putExtra(EXTRA_NOTE, content);
                     replyIntent.putExtra(EXTRA_TIMESTAMP, timestamp);
                     if (extras != null && extras.containsKey(EXTRA_DATA_ID)) {
-                        mId = extras.getInt(EXTRA_DATA_ID, -1);
+                        /*mId = extras.getInt(EXTRA_DATA_ID, -1);
                         if (mId != -1) {
                             replyIntent.putExtra(EXTRA_REPLY_ID, mId);
+                        }*/
+                        String firebaseId = extras.getString(EXTRA_DATA_ID, "");
+                        if (firebaseId != null) {
+                            replyIntent.putExtra(EXTRA_REPLY_ID, firebaseId);
                         }
                     }
                     setResult(RESULT_OK, replyIntent);

@@ -12,6 +12,8 @@ public class NoteEntry {
     @NonNull
     @ColumnInfo(name = "id")
     private int mId;
+    @Ignore
+    private String mFirebaseId;
 
     @NonNull
     @ColumnInfo(name = "content")
@@ -33,11 +35,19 @@ public class NoteEntry {
         this.mTimestamp = timestamp;
     }
 
+    @Ignore
+    public NoteEntry(@NonNull String id, @NonNull String content, @NonNull long timestamp) {
+        this.mFirebaseId = id;
+        this.mContent = content;
+        this.mTimestamp = timestamp;
+    }
+
     public void setId(@NonNull int mId) {
         this.mId = mId;
     }
 
     public int getId() {return this.mId;}
+    public String getFirebaseId() {return this.mFirebaseId;}
     public String getContent(){return this.mContent;}
     public long getTimestamp(){return this.mTimestamp;}
 
